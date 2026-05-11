@@ -8,6 +8,10 @@ typedef struct {
 	int tipoAtendimento;
 } Paciente;
 
+int pacientesTotal = 0;
+int pacientesAtendidos = 0;
+int pacientesRestantes = 0;
+
 void exibirPacienteRemovido(Paciente p) {
 	printf("paciente Atendido:\nNome: %s\nIdade: %d\ngravidade: %d\nTipo de atendimento: %d\n\n", p.nome, p.idade, p.gravidade, p.tipoAtendimento);
 }
@@ -46,7 +50,6 @@ int desenfileirarConsulta() {
         return -1;
     }
     Paciente p = fila[frente]; 
-    exibirPacienteRemovido(p);
     frente++; // Simplesmente avanca a frente
     return 0;
 }
@@ -60,12 +63,12 @@ void exibirfilaConsulta() {
     printf("Fila para Consulta: ");
     int i;
     for (i = frente; i <= tras; i++) {
-        printf("%d ", fila[i]);
+        printf("%s ", fila[i].nome);
     }
     printf("\n");
 }
 
-#define MAX 100
+#define MAX 5
 
 Paciente pilha[MAX];// vetor que representa a pilha
 int topo = -1; // controla o topo da pilha
@@ -88,7 +91,6 @@ int desempilhar() {
         return -1;   // valor de erro
     }
     Paciente p = pilha[topo];
-    exibirPacienteRemovido(p);
     topo--;
     return 0;
 }
@@ -122,7 +124,7 @@ void mostrar_pilha() {
     printf("Pilha (do topo para a base): ");
     int i;
     for (i = topo; i >= 0; i--) {
-        printf("%d ", pilha[i]);
+        printf("%s ", pilha[i].nome);
     }
     printf("\n");
 }
@@ -130,7 +132,7 @@ void mostrar_pilha() {
 
 //Fila circular (EXAME)********************************************
  
-#define MAX_SIZE 5 // Tamanho máximo da fila (pode alterar)
+#define MAX_SIZE 8 // Tamanho máximo da fila (pode alterar)
  
 //-1 indicar que a fila tá vazia
 Paciente filaCircular[MAX_SIZE]; // Vetor que armazena os elementos
@@ -172,7 +174,6 @@ int desenfileirar() {
 }
  
     Paciente p = filaCircular[frenteCircular]; // filaCircular[0] = 10 fila[1]=20
-    exibirPacienteRemovido(p);
  
     if (frenteCircular == trasCircular) {
         // Era o último elemento
@@ -205,10 +206,10 @@ void exibirFila() {
     printf("Fila: ");
     int i = frenteCircular; //pq eu havia tirado dois elementos -- frenteCircular=2 pos ou indice, valor do indice, valor da posicao, elemento 
     while (i != trasCircular) {
-        printf("%d ", fila[i]);
+        printf("%s ", filaCircular[i].nome);
         i = (i + 1) % MAX_SIZE; //pois usa módulo (resto da divisão) fazer em qualque LP use lista ou vetor
     }
-    printf("%d\n", fila[trasCircular]); // imprime o último
+    printf("%s\n", filaCircular[trasCircular].nome); // imprime o último
 }
 
 
@@ -243,35 +244,116 @@ int main() {
 				enfileirarConsulta(p);
 			}
 			else if (tipoAtendimento == 3) {
+				if (estaCheia()) {
+					Paciente pRemovido = filaCircular[frenteCircular];
+					desenfileirar();
+					pacientesAtendidos++;
+					pacientesRestantes--;
+					exibirPacienteRemovido(pRemovido);
+				}
 				enfileirar(p);
 			}
+			pacientesTotal++;
+			pacientesRestantes++;
 		}
 		if (acao == 2) {
 			printf("Qual departamento atender?\n1- emergencia | 2- consulta | 3- exame");
 			int atendimento;
 			printf("\n>> ");
 			scanf("%d", &atendimento);
+			Paciente p;
 			if (atendimento == 1) {
-				desempilhar();
+				p = pilha[topo];
+				int sucesso = desempilhar();
+				if (sucesso == 0) {
+					pacientesAtendidos++;
+					pacientesRestantes--;
+					exibirPacienteRemovido(p);
+				}
 			} else if (atendimento == 2) {
-				desenfileirarConsulta();
+				p = fila[frente];
+				int sucesso = desenfileirarConsulta();
+				if (sucesso == 0) {
+					pacientesAtendidos++;
+					pacientesRestantes--;
+					exibirPacienteRemovido(p);
+				}
 			} else if (atendimento == 3) {
+				p = filaCircular[frenteCircular];
+				int sucesso = desenfileirar();
+				if (sucesso == 0) {
+					pacientesAtendidos++;
+					pacientesRestantes--;
+					exibirPacienteRemovido(p);
+				}
+			}
+		}
+		if (acao == 3) {
+			printf("Exibir qual departamento?\n1- emergencia | 2- consulta | 3- exame");
+			int departamento;
+			printf("\n>> ");
+			scanf("%d", &departamento);
+			if (departamento == 1) {
+				mostrar_pilha();
+			} else if (departamento == 2) {
+				exibirfilaConsulta();
+			} else if (departamento == 3) {
+				exibirFila();
+			}
+		}
+		if (acao == 4) {
+			printf("\nDe qual departamento trasferir?\n1- emergencia | 2- consulta | 3- exame");
+			int departamento;
+			Paciente p;
+			printf("\n>> ");
+			scanf("%d", &departamento);
+			if (departamento == 1) {
+				if (esta_vazia()) {
+					printf("ninguem para transferir");
+					continue;
+				}
+				p = pilha[topo];
+				desempilhar();
+			} else if (departamento == 2) {
+				if (estaVaziaConsulta()) {
+					printf("ninguem para transferir");
+					continue;
+				}
+				
+				p = fila[frente];
+				desenfileirarConsulta();
+			} else if (departamento == 3) {
+				if (estaVazia()) {
+					printf("ninguem para transferir");
+					continue;
+				}
+				p = filaCircular[frenteCircular];
 				desenfileirar();
 			}
 			
-		}
-		if (acao == 3) {
 			
-		}
-		if (acao == 4) {
 			
+			printf("\nPara qual departamento trasferir?\n1- emergencia | 2- consulta | 3- exame");
+			int transferir;
+			printf("\n>> ");
+			scanf("%d", &transferir);
+			if (transferir == 1) {
+				empilhar(p);
+			} else if (transferir == 2) {
+				enfileirarConsulta(p);
+			} else if (transferir == 3) {
+				enfileirar(p);
+			}
 		}
 		if (acao == 5) {
-			
+			printf("\ntotal de pacientes do dia: %d\n", pacientesTotal);
+			printf("total de pacientes atendidos: %d\n", pacientesAtendidos);
+			printf("total de pacientes para serem atendidos: %d\n", pacientesRestantes);
 		}
 		if (acao == 6) {
-			
+			sair = 0;
 		}
 	}
+	printf("\n\nFIM DO PROGRAMA\n");
 	return 0;
 }
