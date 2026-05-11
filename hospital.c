@@ -29,18 +29,32 @@ int estaVaziaConsulta() {
  
 // Verifica se a filaConsulta esta cheia (limite do vetor)
 int estaCheiaConsulta() {
-    return tras == MAX_SIZE_CONSULTA - 1;
+    return (tras - frente + 1) == MAX_SIZE_CONSULTA;
 }
  
 // Enfileirar (enqueue)
-void enfileirarConsulta(Paciente p) {
+int enfileirarConsulta(Paciente p) {
     if (estaCheiaConsulta()) {
         printf("Erro: fila para Consulta linear cheia! (Limite do vetor atingido)\n");
-        return;
+        return 0;
     }
+
+    if (estaVaziaConsulta()) {
+        frente = 0;
+        tras = -1;
+    } else if (tras == MAX_SIZE_CONSULTA - 1) {
+        int i;
+        for (i = frente; i <= tras; i++) {
+            fila[i - frente] = fila[i];
+        }
+        tras = tras - frente;
+        frente = 0;
+    }
+
     tras++; 
     fila[tras] = p;
     printf("Enfileirado na consulta: %s\n", p.nome);
+    return 1;
 }
  
 // Desenfileirar (dequeue)
@@ -74,14 +88,15 @@ Paciente pilha[MAX];// vetor que representa a pilha
 int topo = -1; // controla o topo da pilha
  
 // Função para empilhar (push)
-void empilhar(Paciente p) {
+int empilhar(Paciente p) {
     if (topo == MAX - 1) {
         printf("Erro: Pilha cheia!\n");
-        return;
+        return 0;
     }
     topo++;
     pilha[topo] = p;
     printf("Empilhado na emergencia: %s\n", p.nome);
+    return 1;
 }
  
 // Função para desempilhar (pop)
@@ -150,11 +165,11 @@ int estaCheia() {
 }
  
 // Enfileirar (enqueue)
-void enfileirar(Paciente p) { //fila[0] = 10 fila[1]=20 fila[2]=30 fila[3]=40 fila[4]=50
+int enfileirar(Paciente p) { //fila[0] = 10 fila[1]=20 fila[2]=30 fila[3]=40 fila[4]=50
  
     if (estaCheia()) {
-        printf("Erro: Fila cheia! Não é possível enfileirar %d.\n", p.nome);
-        return;
+        printf("Erro: Fila cheia! Não é possível enfileirar %s.\n", p.nome);
+        return 0;
     }
  
     if (estaVazia()) {
@@ -164,6 +179,7 @@ void enfileirar(Paciente p) { //fila[0] = 10 fila[1]=20 fila[2]=30 fila[3]=40 fi
     trasCircular = (trasCircular + 1) % MAX_SIZE;
     filaCircular[trasCircular] = p;
     printf("Enfileirado no exame: %s\n", p.nome);
+    return 1;
 }
  
 // Desenfileirar (dequeue) - retorna o valor removido
@@ -215,8 +231,8 @@ void exibirFila() {
 
 int main() {
 	printf("Hospital");
-	int acao, sair = 1;
-	while (sair) {
+	int acao, sair = 0;
+	while (!sair) {
 		printf("\n1- cadastrar paciente\n2- atender paciente\n3- mostrar pacientes\n4- transferir paciente\n5- relatorios\n6- sair");
 		printf("\n>> ");
 		scanf("%d", &acao);
@@ -226,7 +242,7 @@ int main() {
 			Paciente p;
 			printf("Preecha os dados do paciente:\n");
 			printf("Nome: ");
-			scanf("%s", &nome);
+			scanf("%19s", nome);
 			printf("Idade: ");
 			scanf("%d", &idade);
 			printf("gravidade (1-5): ");
@@ -237,11 +253,12 @@ int main() {
 			p.idade = idade;
 			p.gravidade = gravidade;
 			p.tipoAtendimento = tipoAtendimento;
+			int cadastrado = 0;
 			if (gravidade == 4 || gravidade == 5 || tipoAtendimento == 1) {
-				empilhar(p);
+				cadastrado = empilhar(p);
 			}
 			else if (tipoAtendimento == 2) {
-				enfileirarConsulta(p);
+				cadastrado = enfileirarConsulta(p);
 			}
 			else if (tipoAtendimento == 3) {
 				if (estaCheia()) {
@@ -251,10 +268,15 @@ int main() {
 					pacientesRestantes--;
 					exibirPacienteRemovido(pRemovido);
 				}
-				enfileirar(p);
+				cadastrado = enfileirar(p);
 			}
-			pacientesTotal++;
-			pacientesRestantes++;
+			else {
+				printf("Tipo de atendimento invalido!\n");
+			}
+			if (cadastrado) {
+				pacientesTotal++;
+				pacientesRestantes++;
+			}
 		}
 		if (acao == 2) {
 			printf("Qual departamento atender?\n1- emergencia | 2- consulta | 3- exame");
@@ -263,6 +285,10 @@ int main() {
 			scanf("%d", &atendimento);
 			Paciente p;
 			if (atendimento == 1) {
+				if (esta_vazia()) {
+					printf("Erro: Pilha vazia!\n");
+					continue;
+				}
 				p = pilha[topo];
 				int sucesso = desempilhar();
 				if (sucesso == 0) {
@@ -271,6 +297,10 @@ int main() {
 					exibirPacienteRemovido(p);
 				}
 			} else if (atendimento == 2) {
+				if (estaVaziaConsulta()) {
+					printf("Erro: Fila para Consulta vazia!\n");
+					continue;
+				}
 				p = fila[frente];
 				int sucesso = desenfileirarConsulta();
 				if (sucesso == 0) {
@@ -279,6 +309,10 @@ int main() {
 					exibirPacienteRemovido(p);
 				}
 			} else if (atendimento == 3) {
+				if (estaVazia()) {
+					printf("Erro: filaCircular vazia! Nada para desenfileirar.\n");
+					continue;
+				}
 				p = filaCircular[frenteCircular];
 				int sucesso = desenfileirar();
 				if (sucesso == 0) {
@@ -329,6 +363,9 @@ int main() {
 				}
 				p = filaCircular[frenteCircular];
 				desenfileirar();
+			} else {
+				printf("Departamento invalido!\n");
+				continue;
 			}
 			
 			
@@ -343,6 +380,8 @@ int main() {
 				enfileirarConsulta(p);
 			} else if (transferir == 3) {
 				enfileirar(p);
+			} else {
+				printf("Departamento invalido!\n");
 			}
 		}
 		if (acao == 5) {
@@ -351,7 +390,7 @@ int main() {
 			printf("total de pacientes para serem atendidos: %d\n", pacientesRestantes);
 		}
 		if (acao == 6) {
-			sair = 0;
+			sair = 1;
 		}
 	}
 	printf("\n\nFIM DO PROGRAMA\n");
